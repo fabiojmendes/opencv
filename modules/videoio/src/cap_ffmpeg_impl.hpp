@@ -174,7 +174,7 @@ extern "C" {
 #define AV_PIX_FMT_GRAY16BE PIX_FMT_GRAY16BE
 #endif
 
-#define H264_CODEC_NAME "h264_videotoolbox"
+#define H264_CODEC_NAME "h264_omx"
 
 static int get_number_of_cpus(void)
 {
