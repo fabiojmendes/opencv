@@ -174,6 +174,8 @@ extern "C" {
 #define AV_PIX_FMT_GRAY16BE PIX_FMT_GRAY16BE
 #endif
 
+#define H264_CODEC_NAME "h264_videotoolbox"
+
 static int get_number_of_cpus(void)
 {
 #if LIBAVFORMAT_BUILD < CALC_FFMPEG_VERSION(52, 111, 0)
@@ -1217,7 +1219,12 @@ static AVStream *icv_add_video_stream_FFMPEG(AVFormatContext *oc,
     }
 
     //if(codec_tag) c->codec_tag=codec_tag;
-    codec = avcodec_find_encoder(c->codec_id);
+    if (c->codec_id == AV_CODEC_ID_H264) {
+        codec = avcodec_find_encoder_by_name(H264_CODEC_NAME);
+    } else {
+        codec = avcodec_find_encoder(c->codec_id);
+    }
+	fprintf(stderr, "[icv_add_video_stream_FFMPEG] using codec: %s", codec->long_name);
 
     c->codec_type = AVMEDIA_TYPE_VIDEO;
 
@@ -1292,19 +1299,19 @@ static AVStream *icv_add_video_stream_FFMPEG(AVFormatContext *oc,
         c->mb_decision=2;
     }
 
-#if LIBAVUTIL_BUILD > CALC_FFMPEG_VERSION(51,11,0)
-    /* Some settings for libx264 encoding, restore dummy values for gop_size
-     and qmin since they will be set to reasonable defaults by the libx264
-     preset system. Also, use a crf encode with the default quality rating,
-     this seems easier than finding an appropriate default bitrate. */
-    if (c->codec_id == AV_CODEC_ID_H264) {
-      c->gop_size = -1;
-      c->qmin = -1;
-      c->bit_rate = 0;
-      if (c->priv_data)
-          av_opt_set(c->priv_data,"crf","23", 0);
-    }
-#endif
+//#if LIBAVUTIL_BUILD > CALC_FFMPEG_VERSION(51,11,0)
+//    /* Some settings for libx264 encoding, restore dummy values for gop_size
+//     and qmin since they will be set to reasonable defaults by the libx264
+//     preset system. Also, use a crf encode with the default quality rating,
+//     this seems easier than finding an appropriate default bitrate. */
+//    if (c->codec_id == AV_CODEC_ID_H264) {
+//      c->gop_size = -1;
+//      c->qmin = -1;
+//      c->bit_rate = 0;
+//      if (c->priv_data)
+//          av_opt_set(c->priv_data,"crf","23", 0);
+//    }
+//#endif
 
 #if LIBAVCODEC_VERSION_INT>0x000409
     // some formats want stream headers to be seperate
@@ -1790,7 +1797,12 @@ bool CvVideoWriter_FFMPEG::open( const char * filename, int fourcc,
 
     c->codec_tag = fourcc;
     /* find the video encoder */
-    codec = avcodec_find_encoder(c->codec_id);
+    if (c->codec_id == AV_CODEC_ID_H264) {
+        codec = avcodec_find_encoder_by_name(H264_CODEC_NAME);
+    } else {
+        codec = avcodec_find_encoder(c->codec_id);
+    }
+	fprintf(stderr, "[CvVideoWriter_FFMPEG::open] using codec: %s", codec->long_name);
     if (!codec) {
         fprintf(stderr, "Could not find encoder for codec id %d: %s\n", c->codec_id, icvFFMPEGErrStr(
         #if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 2, 0)
@@ -2020,7 +2032,14 @@ void OutputMediaStream_FFMPEG::close()
 
 AVStream* OutputMediaStream_FFMPEG::addVideoStream(AVFormatContext *oc, CV_CODEC_ID codec_id, int w, int h, int bitrate, double fps, AVPixelFormat pixel_format)
 {
-    AVCodec* codec = avcodec_find_encoder(codec_id);
+    AVCodec* codec;
+    if (codec_id == AV_CODEC_ID_H264) {
+        codec = avcodec_find_encoder_by_name(H264_CODEC_NAME);
+
+    } else {
+        codec = avcodec_find_encoder(codec_id);
+    }
+    fprintf(stderr, "[OutputMediaStream_FFMPEG::addVideoStream] using codec: %s", codec->long_name);
     if (!codec)
     {
         fprintf(stderr, "Could not find encoder for codec id %d\n", codec_id);
