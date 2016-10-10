@@ -174,6 +174,8 @@ extern "C" {
 #define AV_PIX_FMT_GRAY16BE PIX_FMT_GRAY16BE
 #endif
 
+#include <libavutil/imgutils.h>
+
 #define H264_CODEC_NAME "h264_omx"
 
 static int get_number_of_cpus(void)
@@ -1164,16 +1166,21 @@ static AVFrame * icv_alloc_picture_FFMPEG(int pix_fmt, int width, int height, bo
     picture->width = width;
     picture->height = height;
 
-    size = avpicture_get_size( (AVPixelFormat) pix_fmt, width, height);
-    if(alloc){
-        picture_buf = (uint8_t *) malloc(size);
-        if (!picture_buf)
-        {
-            av_free(picture);
+    if (alloc) {
+        int ret = av_image_alloc(picture->data, picture->linesize, picture->width, picture->height, (AVPixelFormat) pix_fmt, 32);
+        if (ret < 0) {
+            fprintf(stderr, "Could not allocate raw picture buffer\n");
             return NULL;
         }
-        avpicture_fill((AVPicture *)picture, picture_buf,
-                       (AVPixelFormat) pix_fmt, width, height);
+
+//        picture_buf = (uint8_t *) malloc(size);
+//        if (!picture_buf)
+//        {
+//            av_free(picture);
+//            return NULL;
+//        }
+//        avpicture_fill((AVPicture *)picture, picture_buf,
+//                       (AVPixelFormat) pix_fmt, width, height);
     }
     else {
     }
@@ -1224,7 +1231,7 @@ static AVStream *icv_add_video_stream_FFMPEG(AVFormatContext *oc,
     } else {
         codec = avcodec_find_encoder(c->codec_id);
     }
-	fprintf(stderr, "[icv_add_video_stream_FFMPEG] using codec: %s", codec->long_name);
+    fprintf(stderr, "[icv_add_video_stream_FFMPEG] using codec: %s\n", codec->long_name);
 
     c->codec_type = AVMEDIA_TYPE_VIDEO;
 
@@ -1802,7 +1809,7 @@ bool CvVideoWriter_FFMPEG::open( const char * filename, int fourcc,
     } else {
         codec = avcodec_find_encoder(c->codec_id);
     }
-	fprintf(stderr, "[CvVideoWriter_FFMPEG::open] using codec: %s", codec->long_name);
+    fprintf(stderr, "[CvVideoWriter_FFMPEG::open] using codec: %s\n", codec->long_name);
     if (!codec) {
         fprintf(stderr, "Could not find encoder for codec id %d: %s\n", c->codec_id, icvFFMPEGErrStr(
         #if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 2, 0)
@@ -2039,7 +2046,7 @@ AVStream* OutputMediaStream_FFMPEG::addVideoStream(AVFormatContext *oc, CV_CODEC
     } else {
         codec = avcodec_find_encoder(codec_id);
     }
-    fprintf(stderr, "[OutputMediaStream_FFMPEG::addVideoStream] using codec: %s", codec->long_name);
+    fprintf(stderr, "[OutputMediaStream_FFMPEG::addVideoStream] using codec: %s\n", codec->long_name);
     if (!codec)
     {
         fprintf(stderr, "Could not find encoder for codec id %d\n", codec_id);
