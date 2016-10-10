@@ -104,6 +104,10 @@ extern "C" {
   #include <ffmpeg/swscale.h>
 #endif
 
+#if defined(HAVE_FFMPEG)
+  #include <libavutil/imgutils.h>
+#endif
+
 #if defined(HAVE_LIBAVCODEC_AVCODEC_H)
   #include <libavcodec/avcodec.h>
 #endif
@@ -173,8 +177,6 @@ extern "C" {
 #define AV_PIX_FMT_GRAY16LE PIX_FMT_GRAY16LE
 #define AV_PIX_FMT_GRAY16BE PIX_FMT_GRAY16BE
 #endif
-
-#include <libavutil/imgutils.h>
 
 #define H264_CODEC_NAME "h264_omx"
 
